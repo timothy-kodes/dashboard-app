@@ -6,9 +6,11 @@ import postgres from 'postgres'
 import { z } from 'zod'
 import { authConfig } from './auth.config'
 
-const sql = postgres(process.env.POSTGRES_URL!, { ssl: 'require' })
+const sql = postgres(process.env.POSTGRES_URL!, {
+  ssl: { rejectUnauthorized: false },
+})
 
-async function getUser(email: string): Promise<User | undefined> {
+async function getUser(email: string): Promise<User | null> {
   try {
     const user = await sql<User[]>`SELECT * FROM users WHERE email=${email}`
     return user[0]
@@ -23,19 +25,33 @@ export const { auth, signIn, signOut } = NextAuth({
   providers: [
     Credentials({
       async authorize(credentials) {
+        console.log('Credentials received:', credentials)
+
         const parsedCredentials = z
           .object({ email: z.string().email(), password: z.string().min(6) })
           .safeParse(credentials)
 
-        if (parsedCredentials.success) {
-          const { email, password } = parsedCredentials.data
-          const user = await getUser(email)
-          if (!user) return null
-          const passwordsMatch = await bcrypt.compare(password, user.password)
-          if (passwordsMatch) return user
+        if (!parsedCredentials.success) {
+          console.warn('Invalid input:', parsedCredentials.error)
+          return null
         }
-        console.log('Invalid credentials')
-        return null
+
+        const { email, password } = parsedCredentials.data
+        const user = await getUser(email)
+
+        if (!user) {
+          console.warn('User not found:', email)
+          return null
+        }
+
+        const passwordsMatch = await bcrypt.compare(password, user.password)
+        if (!passwordsMatch) {
+          console.warn('Password mismatch for:', email)
+          return null
+        }
+
+        const { password: _removed, ...safeUser } = user
+        return safeUser
       },
     }),
   ],
