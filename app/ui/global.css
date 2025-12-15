@@ -1,6 +1,5 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
+@plugin '@tailwindcss/forms';
 
 input[type='number'] {
   -moz-appearance: textfield;
@@ -15,4 +14,25 @@ input[type='number']::-webkit-inner-spin-button {
 input[type='number']::-webkit-outer-spin-button {
   -webkit-appearance: none;
   margin: 0;
+}
+
+/* Tailwind theme tokens */
+@theme {
+  /* Colors */
+  --color-blue-400: #2589fe;
+  --color-blue-500: #0070f3;
+  --color-blue-600: #2f6feb;
+
+  /* Grid template columns */
+  --grid-template-columns-13: repeat(13, minmax(0, 1fr));
+
+  /* Animation shortcut (optional but recommended) */
+  --animate-shimmer: shimmer 1.5s infinite linear;
+}
+
+/* Keyframes */
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
 }
